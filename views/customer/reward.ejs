@@ -82,24 +82,24 @@
               alert(data.message);
               window.location.reload();
             } else {
-              alert(data.message);
+              alert(data.message || "Redemption failed.");
               btn.disabled = false;
               btn.innerText = "REDEEM REWARD NOW";
             }
           } catch (err) {
-            console.error(err);
+            console.error("Fetch error:", err);
             alert("Error connecting to server.");
             btn.disabled = false;
             btn.innerText = "REDEEM REWARD NOW";
           }
         },
         (error) => {
-          console.error(error);
-          alert("Location permission denied or unavailable. GPS is required to redeem your reward.");
+          console.error("Geolocation error:", error);
+          alert("Location error: " + error.message);
           btn.disabled = false;
           btn.innerText = "REDEEM REWARD NOW";
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
   </script>

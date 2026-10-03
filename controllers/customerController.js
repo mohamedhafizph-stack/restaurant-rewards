@@ -1,8 +1,11 @@
-const QRCode = require('qrcode');
 const Settings = require('../models/Settings');
-const deviceService = require('../services/deviceService');
+const Reward = require('../models/Reward');
 const rewardService = require('../services/rewardService');
+const QRCode = require('qrcode');
 
+/**
+ * Customer Landing Page
+ */
 const getRestaurantPage = async (req, res) => {
   try {
     let settings = await Settings.findOne();
@@ -11,40 +14,49 @@ const getRestaurantPage = async (req, res) => {
     }
 
     const deviceId = req.deviceId;
-    const eligibility = await deviceService.checkDeviceEligibility(deviceId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingReward = await Reward.findOne({
+      deviceId,
+      createdAt: { $gte: today }
+    });
 
     res.render('customer/restaurant', {
       settings,
-      deviceId,
-      canClaim: eligibility.canClaim,
-      eligibilityMessage: eligibility.message
+      existingReward,
+      deviceId
     });
   } catch (error) {
-    console.error('Customer Page Error:', error);
-    res.status(500).send('Server Error loading restaurant page');
+    console.error('Error in getRestaurantPage:', error);
+    res.status(500).send('Server Error');
   }
 };
 
+/**
+ * Claim Reward Action
+ */
 const claimReward = async (req, res) => {
   try {
-    const { deviceId } = req.body;
-    const effectiveDeviceId = deviceId || req.deviceId;
-
-    const result = await rewardService.createRewardForDevice(effectiveDeviceId);
-    return res.json(result);
+    const deviceId = req.deviceId;
+    const { reward } = await rewardService.getOrCreateRewardForDevice(deviceId);
+    res.redirect(`/restaurant/reward/${reward.rewardId}`);
   } catch (error) {
-    console.error('Claim Reward Error:', error);
-    return res.status(500).json({ success: false, message: 'Server error claiming reward.' });
+    console.error('Error in claimReward:', error);
+    res.status(500).send('Server Error claiming reward');
   }
 };
 
-const getRewardPage = async (req, res) => {
+/**
+ * Reward Ticket View
+ */
+const getRewardTicket = async (req, res) => {
   try {
     const { rewardId } = req.params;
-    const reward = await rewardService.getRewardById(rewardId);
+    const reward = await Reward.findOne({ rewardId });
 
     if (!reward) {
-      return res.status(404).send('Reward not found.');
+      return res.status(404).send('Reward ticket not found');
     }
 
     let settings = await Settings.findOne();
@@ -57,61 +69,81 @@ const getRewardPage = async (req, res) => {
       settings
     });
   } catch (error) {
-    console.error('View Reward Error:', error);
-    res.status(500).send('Server Error loading reward');
+    console.error('Error in getRewardTicket:', error);
+    res.status(500).send('Server Error rendering reward ticket');
   }
 };
 
 /**
- * Handle GPS Reward Redemption API Call (POST)
+ * Redeem Reward POST Endpoint
  */
 const redeemReward = async (req, res) => {
   try {
     const { rewardId, latitude, longitude } = req.body;
 
-    if (!latitude || !longitude) {
+    if (!rewardId || latitude === undefined || longitude === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Location access is required to redeem this reward. Please enable GPS on your device.'
+        message: 'Missing reward ID or location coordinates.'
       });
     }
 
     const result = await rewardService.redeemRewardWithLocation(rewardId, latitude, longitude);
     return res.json(result);
   } catch (error) {
-    console.error('Redeem Reward Error:', error);
-    return res.status(500).json({ success: false, message: 'Server error redeeming reward.' });
+    console.error('Redeem Controller Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error processing redemption.'
+    });
   }
 };
 
-const getPermanentQRCode = async (req, res) => {
+/**
+ * Permanent Restaurant QR Code Route
+ */
+const getQrCode = async (req, res) => {
   try {
-    const fullUrl = `${req.protocol}://${req.get('host')}/restaurant`;
-    const qrDataUrl = await QRCode.toDataURL(fullUrl, {
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const restaurantUrl = `${protocol}://${host}/restaurant`;
+
+    const qrDataUrl = await QRCode.toDataURL(restaurantUrl, {
       width: 400,
-      margin: 2,
-      color: { dark: '#000000', light: '#ffffff' }
+      margin: 2
     });
 
     res.send(`
-      <div style="text-align: center; font-family: sans-serif; padding: 40px;">
-        <h2>Permanent Restaurant QR Code</h2>
-        <p>Scans direct to: <code>${fullUrl}</code></p>
-        <img src="${qrDataUrl}" alt="Restaurant QR Code" style="border: 1px solid #ccc; padding: 10px; border-radius: 8px;" />
-        <br/><br/>
-        <a href="${qrDataUrl}" download="restaurant-qr.png" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">Download QR PNG</a>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Restaurant QR Code</title>
+        <style>
+          body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f6f8; margin: 0; }
+          .card { background: white; padding: 32px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
+          img { margin: 20px 0; }
+          p { color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>Scan to Claim Your Reward!</h2>
+          <img src="${qrDataUrl}" alt="Restaurant QR Code" />
+          <p>Target URL: <a href="${restaurantUrl}">${restaurantUrl}</a></p>
+        </div>
+      </body>
+      </html>
     `);
   } catch (error) {
-    console.error('QR Generation Error:', error);
-    res.status(500).send('Failed to generate QR code');
+    console.error('Error generating QR code:', error);
+    res.status(500).send('Error generating QR code');
   }
 };
 
 module.exports = {
   getRestaurantPage,
   claimReward,
-  getRewardPage,
+  getRewardTicket,
   redeemReward,
-  getPermanentQRCode
+  getQrCode
 };

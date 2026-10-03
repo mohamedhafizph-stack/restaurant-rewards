@@ -1,32 +1,32 @@
 /**
- * Calculate distance between two lat/lng points in meters using the Haversine formula
+ * Calculate distance between two GPS coordinates using Haversine formula
  */
-const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
-  const R = 6371e3; // Earth radius in meters
-  const rad = Math.PI / 180;
-
-  const dLat = (lat2 - lat1) * rad;
-  const dLon = (lon2 - lon1) * rad;
+function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return Math.round(R * c); // Distance in meters
-};
+  return Math.round(R * c);
+}
 
 /**
- * Verify if customer coordinates are within allowed restaurant radius
+ * Check if user is within the allowed distance radius
  */
-const isWithinRadius = (userLat, userLng, restaurantLat, restaurantLng, allowedRadiusMeters) => {
-  const distance = calculateDistanceMeters(userLat, userLng, restaurantLat, restaurantLng);
+function isWithinRadius(userLat, userLon, restLat, restLon, radiusMeters) {
+  const distance = calculateDistanceMeters(userLat, userLon, restLat, restLon);
   return {
-    isWithin: distance <= allowedRadiusMeters,
+    isWithin: distance <= radiusMeters,
     distanceMeters: distance
   };
-};
+}
 
 module.exports = {
   calculateDistanceMeters,
