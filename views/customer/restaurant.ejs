@@ -3,89 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= settings.name %> — Instant Rewards</title>
+  <title><%= settings.name %> — Scratch & Win</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f4f6f8; color: #1f2937; padding-bottom: 40px; }
-    .container { max-width: 480px; margin: 0 auto; background: #ffffff; min-height: 100vh; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .header-banner { background: #111827; color: #ffffff; text-align: center; padding: 30px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
-    .restaurant-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .restaurant-desc { font-size: 14px; opacity: 0.85; }
-    .content { padding: 20px; }
-    .reward-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 24px; border-radius: 16px; text-align: center; margin-bottom: 24px; box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25); }
-    .reward-value { font-size: 32px; font-weight: 800; margin: 12px 0; }
-    .btn-claim { background: #10b981; color: white; font-size: 16px; font-weight: 700; border: none; padding: 14px 28px; border-radius: 30px; cursor: pointer; width: 100%; transition: all 0.2s ease; }
-    .btn-claim:disabled { background: #9ca3af; cursor: not-allowed; opacity: 0.7; }
-    .info-section { background: #f9fafb; padding: 16px; border-radius: 12px; margin-top: 16px; border: 1px solid #e5e7eb; }
-    .info-item { font-size: 14px; color: #4b5563; margin-bottom: 8px; }
-    .info-item:last-child { margin-bottom: 0; }
+    body { background-color: #f3f4f6; color: #111827; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .card-container { background: white; max-width: 400px; width: 100%; border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+    h2 { font-size: 22px; color: #111827; margin-bottom: 6px; }
+    p { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+    
+    .scratch-container { position: relative; width: 280px; height: 160px; margin: 0 auto 20px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+    
+    .reward-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; }
+    .reward-layer.win { background: linear-gradient(135deg, #10b981, #059669); }
+    .reward-layer.lose { background: linear-gradient(135deg, #6b7280, #374151); }
+    .reward-layer h2 { font-size: 24px; font-weight: 800; color: white; margin: 4px 0; }
+
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; touch-action: none; z-index: 2; }
+
+    .result-box { margin-top: 15px; }
+    .btn-claim { background: #4f46e5; color: white; border: none; padding: 14px 28px; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; text-decoration: none; display: inline-block; width: 100%; }
+    .already-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 16px; border-radius: 12px; color: #991b1b; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header-banner">
-      <h1 class="restaurant-title"><%= settings.name %></h1>
-      <p class="restaurant-desc"><%= settings.description %></p>
-    </div>
+  <div class="card-container">
+    <h2><%= settings.name %></h2>
 
-    <div class="content">
-      <div class="reward-card">
-        <h3>Today's Exclusive Reward</h3>
-        <div class="reward-value"><%= settings.rewardValue %></div>
-        <p style="font-size: 12px; opacity: 0.9; margin-bottom: 16px;">1 claim per device per calendar day</p>
-
-        <% if (canClaim && settings.rewardEnabled) { %>
-          <button class="btn-claim" id="claimBtn" onclick="claimReward()">CLAIM REWARD</button>
+    <% if (hasScratchedToday) { %>
+      <div class="already-box">
+        <p style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">⏳ Limit Reached Today</p>
+        <p style="color: #7f1d1d; margin-bottom: 12px;">You have already used your 1 daily scratch attempt today.</p>
+        <% if (existingReward) { %>
+          <a href="/restaurant/reward/<%= existingReward.rewardId %>" class="btn-claim">VIEW TODAY'S REWARD TICKET 🎟️️</a>
         <% } else { %>
-          <button class="btn-claim" disabled><%= eligibilityMessage %></button>
+          <p style="font-size: 13px; color: #6b7280;">Come back tomorrow for another chance to scratch and win!</p>
         <% } %>
       </div>
+    <% } else { %>
+      <p id="subInstruction">Scratch the card below to reveal your luck!</p>
 
-      <div class="info-section">
-        <div class="info-item">📍 <strong>Address:</strong> <%= settings.address %></div>
-        <div class="info-item">📞 <strong>Phone:</strong> <%= settings.phone %></div>
+      <div class="scratch-container">
+        <div class="reward-layer lose" id="rewardLayer">
+          <p style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase;" id="layerSub">Scratching...</p>
+          <h2 id="layerTitle">???</h2>
+        </div>
+
+        <canvas id="scratchCanvas" width="280" height="160"></canvas>
       </div>
-    </div>
+
+      <div class="result-box" id="resultBox" style="display: none;"></div>
+    <% } %>
   </div>
 
   <script>
-    // Get or initialize persistent client-side Device ID
-    function getDeviceId() {
-      let deviceId = localStorage.getItem('adoraise_device_id');
-      if (!deviceId) {
-        deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-        localStorage.setItem('adoraise_device_id', deviceId);
-      }
-      return deviceId;
+    // Maintain persistent device ID in localStorage
+    let persistentDeviceId = localStorage.getItem('adoraise_device_id');
+    if (!persistentDeviceId) {
+      persistentDeviceId = 'DEV-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
+      localStorage.setItem('adoraise_device_id', persistentDeviceId);
     }
 
-    async function claimReward() {
-      const btn = document.getElementById('claimBtn');
-      btn.disabled = true;
-      btn.innerText = 'Claiming...';
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('deviceId')) {
+      urlParams.set('deviceId', persistentDeviceId);
+      window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+    }
 
+    <% if (!hasScratchedToday) { %>
+    const canvas = document.getElementById('scratchCanvas');
+    const ctx = canvas.getContext('2d');
+    const rewardLayer = document.getElementById('rewardLayer');
+    const layerSub = document.getElementById('layerSub');
+    const layerTitle = document.getElementById('layerTitle');
+    const resultBox = document.getElementById('resultBox');
+    const subInstruction = document.getElementById('subInstruction');
+
+    // Draw scratch layer cover
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText('SCRATCH HERE 🪙', canvas.width / 2, canvas.height / 2 + 6);
+
+    let isScratching = false;
+    let outcomeFetched = false;
+    let gameResult = null;
+
+    async function fetchOutcome() {
+      if (outcomeFetched) return;
+      outcomeFetched = true;
       try {
-        const response = await fetch('/restaurant/claim', {
+        const response = await fetch(`/restaurant/claim?deviceId=${encodeURIComponent(persistentDeviceId)}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: getDeviceId() })
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Device-ID': persistentDeviceId
+          }
         });
+        
+        gameResult = await response.json();
 
-        const data = await response.json();
-
-        if (data.success) {
-          window.location.href = `/restaurant/reward/${data.reward.rewardId}`;
+        if (gameResult.alreadyPlayed) {
+          rewardLayer.className = 'reward-layer lose';
+          layerSub.innerText = 'ATTEMPT USED';
+          layerTitle.innerText = 'Already Scratched Today!';
+        } else if (gameResult.isWinner) {
+          rewardLayer.className = 'reward-layer win';
+          layerSub.innerText = 'YOU WON! 🎉';
+          layerTitle.innerText = '<%= settings.rewardValue || "₹50 OFF" %>';
         } else {
-          alert(data.message);
-          window.location.reload();
+          rewardLayer.className = 'reward-layer lose';
+          layerSub.innerText = 'BAD LUCK!';
+          layerTitle.innerText = 'Better Luck Next Time 😢';
         }
       } catch (err) {
-        console.error(err);
-        alert('An error occurred while claiming your reward.');
-        btn.disabled = false;
-        btn.innerText = 'CLAIM REWARD';
+        console.error('Error fetching outcome:', err);
       }
     }
+
+    function getBrushPos(xRef, yRef) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: xRef - rect.left, y: yRef - rect.top };
+    }
+
+    function scratch(x, y) {
+      fetchOutcome();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 18, 0, Math.PI * 2);
+      ctx.fill();
+      checkScratchedPercentage();
+    }
+
+    // Touch & Mouse Event Listeners
+    canvas.addEventListener('mousedown', (e) => { isScratching = true; const pos = getBrushPos(e.clientX, e.clientY); scratch(pos.x, pos.y); });
+    canvas.addEventListener('mousemove', (e) => { if (isScratching) { const pos = getBrushPos(e.clientX, e.clientY); scratch(pos.x, pos.y); } });
+    canvas.addEventListener('mouseup', () => isScratching = false);
+
+    canvas.addEventListener('touchstart', (e) => { isScratching = true; const pos = getBrushPos(e.touches[0].clientX, e.touches[0].clientY); scratch(pos.x, pos.y); });
+    canvas.addEventListener('touchmove', (e) => { if (isScratching) { const pos = getBrushPos(e.touches[0].clientX, e.touches[0].clientY); scratch(pos.x, pos.y); } });
+    canvas.addEventListener('touchend', () => isScratching = false);
+
+    function checkScratchedPercentage() {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let clearedPixels = 0;
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] === 0) clearedPixels++;
+      }
+      
+      const percent = (clearedPixels / (imageData.data.length / 4)) * 100;
+      if (percent > 40 && gameResult !== null) {
+        canvas.style.pointerEvents = 'none';
+        canvas.style.opacity = '0';
+        canvas.style.transition = 'opacity 0.5s ease';
+
+        resultBox.style.display = 'block';
+        if (gameResult.alreadyPlayed) {
+          subInstruction.innerText = gameResult.message;
+          if (gameResult.redirectUrl) {
+            resultBox.innerHTML = `<a href="${gameResult.redirectUrl}" class="btn-claim">VIEW YOUR TICKET 🎟️</a>`;
+          } else {
+            resultBox.innerHTML = `<p style="color: #dc2626; font-weight: bold;">Come back tomorrow! 🍀</p>`;
+          }
+        } else if (gameResult.isWinner) {
+          subInstruction.innerText = 'Congratulations! Claim your ticket below.';
+          resultBox.innerHTML = `<a href="${gameResult.redirectUrl}" class="btn-claim">VIEW YOUR REWARD TICKET 🎟️</a>`;
+        } else {
+          subInstruction.innerText = 'Thanks for playing today!';
+          resultBox.innerHTML = `<p style="color: #dc2626; font-weight: bold;">Better Luck Next Time! Come back tomorrow. 🍀</p>`;
+        }
+      }
+    }
+    <% } %>
   </script>
 </body>
 </html>

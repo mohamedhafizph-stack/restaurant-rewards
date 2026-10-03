@@ -2,9 +2,22 @@ const Reward = require('../models/Reward');
 const Settings = require('../models/Settings');
 const Device = require('../models/Device');
 const locationService = require('./locationService');
+const crypto = require('crypto');
 
 /**
- * Get active reward or issue a new reward ticket for device
+ * Generate a deterministic random target number (between 1 and maxRange) 
+ * for a given date string (YYYY-MM-DD).
+ */
+const getDailyTargetNumber = (dateString, maxRange = 200) => {
+  const hash = crypto.createHash('sha256').update(dateString).digest('hex');
+  const numberFromHash = parseInt(hash.substring(0, 8), 16);
+  return (numberFromHash % maxRange) + 1; // Returns a number from 1 to maxRange
+};
+
+/**
+ * Handle scratch-and-win logic:
+ * - 1 scratch attempt per device per day.
+ * - Random N-th customer of the day automatically wins (1 global winner/day).
  */
 const getOrCreateRewardForDevice = async (deviceId) => {
   let device = await Device.findOne({ deviceId });
@@ -14,17 +27,63 @@ const getOrCreateRewardForDevice = async (deviceId) => {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const dateKey = today.toISOString().split('T')[0]; // e.g., "2026-10-03"
 
-  let reward = await Reward.findOne({
+  // 1. Check if THIS device already has a winning ticket today
+  let existingReward = await Reward.findOne({
     deviceId,
     createdAt: { $gte: today }
   });
 
-  if (reward) {
-    return { reward, isNew: false };
+  if (existingReward) {
+    return {
+      alreadyPlayed: true,
+      isWinner: true,
+      reward: existingReward,
+      message: 'You already claimed your reward ticket for today!'
+    };
   }
 
-  const settings = await Settings.findOne() || {};
+  // 2. Check if THIS device already attempted scratching today
+  if (device.lastScratchedAt && new Date(device.lastScratchedAt) >= today) {
+    return {
+      alreadyPlayed: true,
+      isWinner: false,
+      message: 'You have already used your daily scratch attempt today. Come back tomorrow!'
+    };
+  }
+
+  // Record daily scratch attempt timestamp FIRST
+  device.lastScratchedAt = new Date();
+  await device.save();
+
+  // 3. Count total devices that have scratched today (including current player)
+  const totalScratchedToday = await Device.countDocuments({
+    lastScratchedAt: { $gte: today }
+  });
+
+  // 4. Check if ANY device has already won today (Limit: 1 global winner per day)
+  const totalWinnersToday = await Reward.countDocuments({
+    createdAt: { $gte: today }
+  });
+
+  if (totalWinnersToday >= 1) {
+    return { alreadyPlayed: false, isWinner: false };
+  }
+
+  // 5. Determine today's secret random winning spot (between 1 and MAX_RANGE)
+  const MAX_RANGE = 200; // Winning customer will be a random position between 1 and 200
+  const targetWinnerPosition = getDailyTargetNumber(dateKey, MAX_RANGE);
+
+  // Check if current user's attempt order matches today's target position
+  const isWinner = totalScratchedToday === targetWinnerPosition;
+
+  if (!isWinner) {
+    return { alreadyPlayed: false, isWinner: false };
+  }
+
+  // 6. Player IS today's random N-th customer! Create the winning reward ticket
+  const settings = (await Settings.findOne()) || {};
   const expiryHours = settings.rewardExpiryHours || 24;
 
   const expiresAt = new Date();
@@ -32,7 +91,7 @@ const getOrCreateRewardForDevice = async (deviceId) => {
 
   const rewardId = 'RW-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  reward = await Reward.create({
+  const reward = await Reward.create({
     rewardId,
     deviceId,
     rewardType: settings.rewardType || 'DISCOUNT_AMOUNT',
@@ -41,7 +100,7 @@ const getOrCreateRewardForDevice = async (deviceId) => {
     expiresAt
   });
 
-  return { reward, isNew: true };
+  return { alreadyPlayed: false, isWinner: true, reward };
 };
 
 /**

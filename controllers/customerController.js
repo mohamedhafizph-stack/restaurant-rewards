@@ -1,5 +1,6 @@
 const Settings = require('../models/Settings');
 const Reward = require('../models/Reward');
+const Device = require('../models/Device');
 const rewardService = require('../services/rewardService');
 const QRCode = require('qrcode');
 
@@ -17,6 +18,9 @@ const getRestaurantPage = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const device = await Device.findOne({ deviceId });
+    const hasScratchedToday = !!(device && device.lastScratchedAt && new Date(device.lastScratchedAt) >= today);
+
     const existingReward = await Reward.findOne({
       deviceId,
       createdAt: { $gte: today }
@@ -24,8 +28,9 @@ const getRestaurantPage = async (req, res) => {
 
     res.render('customer/restaurant', {
       settings,
-      existingReward,
-      deviceId
+      deviceId,
+      hasScratchedToday,
+      existingReward
     });
   } catch (error) {
     console.error('Error in getRestaurantPage:', error);
@@ -34,16 +39,38 @@ const getRestaurantPage = async (req, res) => {
 };
 
 /**
- * Claim Reward Action
+ * Claim Reward Action (Handles Random Scratch & 1 Attempt/Day Limit)
  */
 const claimReward = async (req, res) => {
   try {
-    const deviceId = req.deviceId;
-    const { reward } = await rewardService.getOrCreateRewardForDevice(deviceId);
-    res.redirect(`/restaurant/reward/${reward.rewardId}`);
+    const deviceId = req.query.deviceId || req.deviceId;
+    const result = await rewardService.getOrCreateRewardForDevice(deviceId);
+
+    if (result.alreadyPlayed) {
+      return res.json({
+        alreadyPlayed: true,
+        isWinner: result.isWinner,
+        message: result.message,
+        redirectUrl: result.reward ? `/restaurant/reward/${result.reward.rewardId}` : null
+      });
+    }
+
+    if (result.isWinner) {
+      return res.json({
+        alreadyPlayed: false,
+        isWinner: true,
+        redirectUrl: `/restaurant/reward/${result.reward.rewardId}`
+      });
+    } else {
+      return res.json({
+        alreadyPlayed: false,
+        isWinner: false,
+        message: 'Better luck next time!'
+      });
+    }
   } catch (error) {
     console.error('Error in claimReward:', error);
-    res.status(500).send('Server Error claiming reward');
+    return res.status(500).json({ success: false, message: 'Server error processing game outcome.' });
   }
 };
 
