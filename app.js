@@ -11,6 +11,7 @@ const connectDB = require('./config/db');
 
 // 3. Import routes
 const customerRoutes = require('./routes/customerRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // 4. Connect to MongoDB Atlas
 connectDB();
@@ -30,12 +31,10 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Device Identification Middleware
-// Reads device ID from custom header/query or generates a fallback session identifier
 app.use((req, res, next) => {
   let deviceId = req.headers['x-device-id'] || req.query.deviceId;
   
   if (!deviceId) {
-    // Basic fallback device identifier generated server-side for local testing
     deviceId = 'dev_' + crypto.randomBytes(6).toString('hex');
   }
   
@@ -45,6 +44,7 @@ app.use((req, res, next) => {
 
 // Route Mounts
 app.use('/restaurant', customerRoutes);
+app.use('/admin', adminRoutes);
 
 // Root redirect to restaurant customer page
 app.get('/', (req, res) => {
