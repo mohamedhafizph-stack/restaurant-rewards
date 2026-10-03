@@ -3,9 +3,6 @@ const Settings = require('../models/Settings');
 const deviceService = require('../services/deviceService');
 const rewardService = require('../services/rewardService');
 
-/**
- * Render Customer Restaurant Page
- */
 const getRestaurantPage = async (req, res) => {
   try {
     let settings = await Settings.findOne();
@@ -28,9 +25,6 @@ const getRestaurantPage = async (req, res) => {
   }
 };
 
-/**
- * Handle Claim Reward API Call (POST)
- */
 const claimReward = async (req, res) => {
   try {
     const { deviceId } = req.body;
@@ -44,9 +38,6 @@ const claimReward = async (req, res) => {
   }
 };
 
-/**
- * Render Active Customer Reward Page
- */
 const getRewardPage = async (req, res) => {
   try {
     const { rewardId } = req.params;
@@ -72,8 +63,27 @@ const getRewardPage = async (req, res) => {
 };
 
 /**
- * Generate & Download Permanent Restaurant QR Code Image
+ * Handle GPS Reward Redemption API Call (POST)
  */
+const redeemReward = async (req, res) => {
+  try {
+    const { rewardId, latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Location access is required to redeem this reward. Please enable GPS on your device.'
+      });
+    }
+
+    const result = await rewardService.redeemRewardWithLocation(rewardId, latitude, longitude);
+    return res.json(result);
+  } catch (error) {
+    console.error('Redeem Reward Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error redeeming reward.' });
+  }
+};
+
 const getPermanentQRCode = async (req, res) => {
   try {
     const fullUrl = `${req.protocol}://${req.get('host')}/restaurant`;
@@ -102,5 +112,6 @@ module.exports = {
   getRestaurantPage,
   claimReward,
   getRewardPage,
+  redeemReward,
   getPermanentQRCode
 };

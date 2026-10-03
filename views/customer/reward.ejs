@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Active Reward — <%= settings.name %></title>
+  <title>Your Reward — <%= settings.name %></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f4f6f8; color: #1f2937; padding-bottom: 40px; }
@@ -13,10 +13,14 @@
     .ticket { border: 2px dashed #4f46e5; background: #eef2ff; border-radius: 16px; padding: 24px; margin: 20px 0; }
     .reward-code { font-size: 28px; font-weight: 800; letter-spacing: 2px; color: #4f46e5; margin: 10px 0; }
     .reward-value { font-size: 22px; font-weight: 700; color: #059669; }
-    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #10b981; color: white; text-transform: uppercase; margin-bottom: 12px; }
+    .status-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+    .status-ACTIVE { background: #10b981; color: white; }
+    .status-REDEEMED { background: #3b82f6; color: white; }
+    .status-EXPIRED { background: #ef4444; color: white; }
     .btn-redeem { background: #059669; color: white; font-size: 16px; font-weight: 700; border: none; padding: 14px 28px; border-radius: 30px; cursor: pointer; width: 100%; transition: all 0.2s ease; margin-top: 16px; }
-    .btn-redeem:hover { background: #047857; }
+    .btn-redeem:disabled { background: #9ca3af; cursor: not-allowed; }
     .expiry-text { font-size: 13px; color: #6b7280; margin-top: 12px; }
+    .location-notice { font-size: 12px; color: #6b7280; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -28,20 +32,75 @@
 
     <div class="content">
       <div class="ticket">
-        <span class="status-badge"><%= reward.status %></span>
+        <span class="status-badge status-<%= reward.status %>" id="statusBadge"><%= reward.status %></span>
         <p style="font-size: 13px; color: #6b7280;">Your Reward Code</p>
         <div class="reward-code"><%= reward.rewardId %></div>
         <div class="reward-value"><%= reward.value %></div>
       </div>
 
-      <button class="btn-redeem" id="redeemBtn" onclick="handleRedeem('<%= reward.rewardId %>')">REDEEM REWARD NOW</button>
+      <% if (reward.status === 'ACTIVE') { %>
+        <button class="btn-redeem" id="redeemBtn" onclick="handleRedeem('<%= reward.rewardId %>')">REDEEM REWARD NOW</button>
+        <p class="location-notice">⚠️ You must be at the restaurant to redeem (GPS location required)</p>
+      <% } else if (reward.status === 'REDEEMED') { %>
+        <p style="color: #059669; font-weight: bold; font-size: 18px;">🎉 Reward Already Redeemed!</p>
+        <p style="font-size: 12px; color: #6b7280; margin-top: 4px;">Redeemed on: <%= new Date(reward.redeemedAt).toLocaleString() %></p>
+      <% } else { %>
+        <p style="color: #ef4444; font-weight: bold;">This reward has expired.</p>
+      <% } %>
+
       <div class="expiry-text">Expires on: <%= new Date(reward.expiresAt).toLocaleString() %></div>
     </div>
   </div>
 
   <script>
     async function handleRedeem(rewardId) {
-      alert("Redemption with GPS location check will be handled in Phase 7!");
+      const btn = document.getElementById('redeemBtn');
+
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "Verifying Location...";
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          try {
+            const response = await fetch('/restaurant/redeem', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ rewardId, latitude, longitude })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              alert(data.message);
+              window.location.reload();
+            } else {
+              alert(data.message);
+              btn.disabled = false;
+              btn.innerText = "REDEEM REWARD NOW";
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Error connecting to server.");
+            btn.disabled = false;
+            btn.innerText = "REDEEM REWARD NOW";
+          }
+        },
+        (error) => {
+          console.error(error);
+          alert("Location permission denied or unavailable. GPS is required to redeem your reward.");
+          btn.disabled = false;
+          btn.innerText = "REDEEM REWARD NOW";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     }
   </script>
 </body>
