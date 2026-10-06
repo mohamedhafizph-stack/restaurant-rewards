@@ -241,7 +241,7 @@ const getOrCreateRewardForDevice = async (
   const targetWinnerPosition =
     getDailyTargetNumber(
       getDateKey(),
-      100
+      1
     );
 
   const isWinner =
