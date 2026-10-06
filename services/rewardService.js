@@ -4,160 +4,387 @@ const Device = require('../models/Device');
 const locationService = require('./locationService');
 const crypto = require('crypto');
 
-/**
- * Generate a deterministic random target number (between 1 and maxRange) 
- * for a given date string (YYYY-MM-DD).
- */
-const getDailyTargetNumber = (dateString, maxRange = 200) => {
-  const hash = crypto.createHash('sha256').update(dateString).digest('hex');
-  const numberFromHash = parseInt(hash.substring(0, 8), 16);
-  return (numberFromHash % maxRange) + 1; // Returns a number from 1 to maxRange
-};
+function startOfToday() {
+  const date = new Date();
 
-/**
- * Handle scratch-and-win logic:
- * - 1 scratch attempt per device per day.
- * - Random N-th customer of the day automatically wins (1 global winner/day).
- */
-const getOrCreateRewardForDevice = async (deviceId) => {
-  let device = await Device.findOne({ deviceId });
-  if (!device) {
-    device = await Device.create({ deviceId });
-  }
+  date.setHours(
+    0,
+    0,
+    0,
+    0
+  );
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dateKey = today.toISOString().split('T')[0]; // e.g., "2026-10-03"
+  return date;
+}
 
-  // 1. Check if THIS device already has a winning ticket today
-  let existingReward = await Reward.findOne({
-    deviceId,
-    createdAt: { $gte: today }
-  });
+function getDateKey() {
+  const date = new Date();
 
-  if (existingReward) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0')
+  ].join('-');
+}
+
+function getDailyTargetNumber(
+  dateString,
+  maxRange = 100
+) {
+  const hash = crypto
+    .createHash('sha256')
+    .update(dateString)
+    .digest('hex');
+
+  const numberFromHash =
+    parseInt(hash.substring(0, 8), 16);
+
+  return (numberFromHash % maxRange) + 1;
+}
+
+function checkLocation(
+  settings,
+  userLat,
+  userLng
+) {
+  const uLat = parseFloat(userLat);
+  const uLng = parseFloat(userLng);
+
+  const restaurantLat =
+    parseFloat(settings.latitude);
+
+  const restaurantLng =
+    parseFloat(settings.longitude);
+
+  const radius =
+    Number(settings.redemptionRadius) || 100;
+
+  if (
+    !Number.isFinite(uLat) ||
+    !Number.isFinite(uLng)
+  ) {
     return {
-      alreadyPlayed: true,
-      isWinner: true,
-      reward: existingReward,
-      message: 'You already claimed your reward ticket for today!'
+      valid: false,
+      message:
+        'GPS location permission is required. Please allow location access and try again.'
     };
   }
 
-  // 2. Check if THIS device already attempted scratching today
-  if (device.lastScratchedAt && new Date(device.lastScratchedAt) >= today) {
+  if (
+    !Number.isFinite(restaurantLat) ||
+    !Number.isFinite(restaurantLng)
+  ) {
+    return {
+      valid: false,
+      message:
+        'Restaurant GPS coordinates are not configured correctly.'
+    };
+  }
+
+  const result =
+    locationService.isWithinRadius(
+      uLat,
+      uLng,
+      restaurantLat,
+      restaurantLng,
+      radius
+    );
+
+  if (!result.isWithin) {
+    return {
+      valid: false,
+      message:
+        `You are approximately ${result.distanceMeters}m away from the restaurant. ` +
+        `Please be inside the restaurant to claim your reward. ` +
+        `Allowed distance: ${radius}m.`
+    };
+  }
+
+  return {
+    valid: true,
+    distanceMeters: result.distanceMeters
+  };
+}
+
+const getOrCreateRewardForDevice = async (
+  deviceId,
+  userLat,
+  userLng
+) => {
+  const settings =
+    await Settings.findOne() ||
+    await Settings.create({});
+
+  if (!settings.rewardEnabled) {
+    return {
+      alreadyPlayed: false,
+      isWinner: false,
+      locationError: true,
+      message:
+        'Reward claiming is currently disabled by the restaurant.'
+    };
+  }
+
+  /*
+   * IMPORTANT:
+   * GPS is checked BEFORE the device attempt
+   * is consumed.
+   */
+  const location = checkLocation(
+    settings,
+    userLat,
+    userLng
+  );
+
+  if (!location.valid) {
+    return {
+      alreadyPlayed: false,
+      isWinner: false,
+      locationError: true,
+      message: location.message
+    };
+  }
+
+  if (!deviceId) {
+    return {
+      alreadyPlayed: false,
+      isWinner: false,
+      locationError: true,
+      message: 'Invalid device identifier.'
+    };
+  }
+
+  const today = startOfToday();
+
+  let device =
+    await Device.findOne({ deviceId });
+
+  if (!device) {
+    device = await Device.create({
+      deviceId
+    });
+  }
+
+  /*
+   * Already played today?
+   */
+  if (
+    device.lastScratchedAt &&
+    new Date(device.lastScratchedAt) >= today
+  ) {
+    const existingReward =
+      await Reward.findOne({
+        deviceId,
+        createdAt: {
+          $gte: today
+        }
+      });
+
+    if (existingReward) {
+      return {
+        alreadyPlayed: true,
+        isWinner: true,
+        reward: existingReward,
+        message:
+          'You already claimed your reward ticket for today!'
+      };
+    }
+
     return {
       alreadyPlayed: true,
       isWinner: false,
-      message: 'You have already used your daily scratch attempt today. Come back tomorrow!'
+      message:
+        'You have already used your daily scratch attempt today. Come back tomorrow!'
     };
   }
 
-  // Record daily scratch attempt timestamp FIRST
+  /*
+   * Mark the device as having played ONLY AFTER
+   * GPS verification succeeded.
+   */
   device.lastScratchedAt = new Date();
+
   await device.save();
 
-  // 3. Count total devices that have scratched today (including current player)
-  const totalScratchedToday = await Device.countDocuments({
-    lastScratchedAt: { $gte: today }
-  });
+  const totalScratchedToday =
+    await Device.countDocuments({
+      lastScratchedAt: {
+        $gte: today
+      }
+    });
 
-  // 4. Check if ANY device has already won today (Limit: 1 global winner per day)
-  const totalWinnersToday = await Reward.countDocuments({
-    createdAt: { $gte: today }
-  });
+  const existingWinner =
+    await Reward.findOne({
+      createdAt: {
+        $gte: today
+      }
+    });
 
-  if (totalWinnersToday >= 1) {
-    return { alreadyPlayed: false, isWinner: false };
+  /*
+   * Only one winner per day.
+   */
+  if (existingWinner) {
+    return {
+      alreadyPlayed: false,
+      isWinner: false,
+      message: 'Better luck next time!'
+    };
   }
 
-  // 5. Determine today's secret random winning spot (between 1 and MAX_RANGE)
-  const MAX_RANGE = 200; // Winning customer will be a random position between 1 and 200
-  const targetWinnerPosition = getDailyTargetNumber(dateKey, MAX_RANGE);
+  /*
+   * Winner position is between 1 and 100.
+   *
+   * Example:
+   * If today's target = 37,
+   * the 37th valid player wins.
+   */
+  const targetWinnerPosition =
+    getDailyTargetNumber(
+      getDateKey(),
+      1
+    );
 
-  // Check if current user's attempt order matches today's target position
-  const isWinner = totalScratchedToday === targetWinnerPosition;
+  const isWinner =
+    totalScratchedToday === targetWinnerPosition;
 
   if (!isWinner) {
-    return { alreadyPlayed: false, isWinner: false };
+    return {
+      alreadyPlayed: false,
+      isWinner: false,
+      message: 'Better luck next time!'
+    };
   }
 
-  // 6. Player IS today's random N-th customer! Create the winning reward ticket
-  const settings = (await Settings.findOne()) || {};
-  const expiryHours = settings.rewardExpiryHours || 24;
+  const expiryHours =
+    Number(settings.rewardExpiryHours) || 24;
 
   const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + expiryHours);
 
-  const rewardId = 'RW-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  expiresAt.setHours(
+    expiresAt.getHours() + expiryHours
+  );
 
-  const reward = await Reward.create({
-    rewardId,
-    deviceId,
-    rewardType: settings.rewardType || 'DISCOUNT_AMOUNT',
-    value: settings.rewardValue || '₹50 OFF',
-    status: 'ACTIVE',
-    expiresAt
-  });
+  const rewardId =
+    'RW-' +
+    crypto.randomBytes(4)
+      .toString('hex')
+      .toUpperCase();
 
-  return { alreadyPlayed: false, isWinner: true, reward };
+  const reward =
+    await Reward.create({
+      rewardId,
+      deviceId,
+
+      rewardType:
+        settings.rewardType ||
+        'DISCOUNT_AMOUNT',
+
+      value:
+        settings.rewardValue ||
+        '₹100 Cashback',
+
+      status: 'ACTIVE',
+
+      expiresAt
+    });
+
+  return {
+    alreadyPlayed: false,
+    isWinner: true,
+    reward
+  };
 };
 
-/**
- * Redeem reward after validating GPS location geofence
- */
-const redeemRewardWithLocation = async (rewardId, userLat, userLng) => {
+const redeemRewardWithLocation = async (
+  rewardId,
+  userLat,
+  userLng
+) => {
   try {
-    const reward = await Reward.findOne({ rewardId });
+    const reward =
+      await Reward.findOne({
+        rewardId
+      });
+
     if (!reward) {
-      return { success: false, message: 'Reward ticket not found.' };
+      return {
+        success: false,
+        message: 'Reward ticket not found.'
+      };
     }
 
     if (reward.status !== 'ACTIVE') {
-      return { success: false, message: `Reward is already ${reward.status.toLowerCase()}.` };
-    }
-
-    if (new Date() > new Date(reward.expiresAt)) {
-      reward.status = 'EXPIRED';
-      await reward.save();
-      return { success: false, message: 'This reward ticket has expired.' };
-    }
-
-    let settings = await Settings.findOne();
-    if (!settings) {
-      return { success: false, message: 'Restaurant settings configured incorrectly.' };
-    }
-
-    const uLat = parseFloat(userLat);
-    const uLng = parseFloat(userLng);
-    const rLat = parseFloat(settings.latitude);
-    const rLng = parseFloat(settings.longitude);
-    const maxRadius = parseInt(settings.redemptionRadius, 10) || 500;
-
-    if (isNaN(uLat) || isNaN(uLng)) {
-      return { success: false, message: 'Invalid GPS coordinates provided by browser.' };
-    }
-
-    const locationCheck = locationService.isWithinRadius(uLat, uLng, rLat, rLng, maxRadius);
-
-    if (!locationCheck.isWithin) {
       return {
         success: false,
-        message: `You are too far from the restaurant (${locationCheck.distanceMeters}m away). Allowed distance is ${maxRadius}m.`
+        message:
+          `Reward is already ${reward.status.toLowerCase()}.`
+      };
+    }
+
+    if (
+      reward.expiresAt &&
+      new Date() > new Date(reward.expiresAt)
+    ) {
+      reward.status = 'EXPIRED';
+
+      await reward.save();
+
+      return {
+        success: false,
+        message:
+          'This reward ticket has expired.'
+      };
+    }
+
+    const settings =
+      await Settings.findOne();
+
+    if (!settings) {
+      return {
+        success: false,
+        message:
+          'Restaurant settings are not configured.'
+      };
+    }
+
+    const location =
+      checkLocation(
+        settings,
+        userLat,
+        userLng
+      );
+
+    if (!location.valid) {
+      return {
+        success: false,
+        message: location.message
       };
     }
 
     reward.status = 'REDEEMED';
-    reward.redeemedAt = new Date();
+
+    reward.redeemedAt =
+      new Date();
+
     await reward.save();
 
     return {
       success: true,
-      message: `🎉 Success! Reward redeemed. Distance verified: ${locationCheck.distanceMeters}m.`
+      message:
+        `🎉 Reward redeemed successfully! ` +
+        `You are ${location.distanceMeters}m from the restaurant.`
     };
   } catch (error) {
-    console.error('Error in redeemRewardWithLocation:', error);
-    return { success: false, message: 'Internal server error during location verification.' };
+    console.error(
+      'Error redeeming reward:',
+      error
+    );
+
+    return {
+      success: false,
+      message:
+        'Server error during redemption.'
+    };
   }
 };
 

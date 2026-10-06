@@ -1,20 +1,39 @@
 const express = require('express');
-const router = express.Router();
-const customerController = require('../controllers/customerController');
 
-// Customer Landing Page
-router.get('/', customerController.getRestaurantPage);
+const router =
+  express.Router();
 
-// Claim Reward Action
-router.post('/claim', customerController.claimReward);
+const customerController =
+  require('../controllers/customerController');
 
-// View Issued Reward Ticket
-router.get('/reward/:rewardId', customerController.getRewardTicket);
+router.get(
+  '/',
+  customerController.getRestaurantPage
+);
 
-// Location-based Redemption Endpoint
-router.post('/redeem', customerController.redeemReward);
+router.post(
+  '/claim',
+  customerController.claimReward
+);
 
-// QR Code View Endpoint
-router.get('/qr', customerController.getQrCode);
+router.get(
+  '/reward/:rewardId',
+  customerController.getRewardTicket
+);
+
+router.post(
+  '/submit-upi',
+  customerController.submitUpiForPayout
+);
+
+router.post(
+  '/redeem',
+  customerController.redeemReward
+);
+
+router.get(
+  '/qr',
+  customerController.getQrCode
+);
 
 module.exports = router;

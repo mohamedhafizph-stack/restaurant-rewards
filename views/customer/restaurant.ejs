@@ -1,182 +1,2653 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= settings.name %> — Scratch & Win</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>
+    <%= settings.name %> | Adoraise
+  </title>
+
+
+  <!-- Google Fonts -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f3f4f6; color: #111827; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-    .card-container { background: white; max-width: 400px; width: 100%; border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
-    h2 { font-size: 22px; color: #111827; margin-bottom: 6px; }
-    p { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
-    
-    .scratch-container { position: relative; width: 280px; height: 160px; margin: 0 auto 20px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-    
-    .reward-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; }
-    .reward-layer.win { background: linear-gradient(135deg, #10b981, #059669); }
-    .reward-layer.lose { background: linear-gradient(135deg, #6b7280, #374151); }
-    .reward-layer h2 { font-size: 24px; font-weight: 800; color: white; margin: 4px 0; }
 
-    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; touch-action: none; z-index: 2; }
+    /* =========================================================
+       ROOT
+    ========================================================= */
 
-    .result-box { margin-top: 15px; }
-    .btn-claim { background: #4f46e5; color: white; border: none; padding: 14px 28px; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; text-decoration: none; display: inline-block; width: 100%; }
-    .already-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 16px; border-radius: 12px; color: #991b1b; }
+    :root {
+
+      --cream: #f8f8f3;
+
+      --ivory: #ffffff;
+
+      --sage-light: #e6efe2;
+
+      --sage: #a9c39f;
+
+      --sage-medium: #7f9f76;
+
+      --sage-dark: #547052;
+
+      --olive: #334632;
+
+      --gold: #b59a62;
+
+      --gold-light: #d9c99f;
+
+      --text: #263126;
+
+      --muted: #758075;
+
+      --border: rgba(84, 112, 82, 0.18);
+
+      --shadow:
+        0 20px 60px rgba(48, 67, 48, 0.10);
+
+      --soft-shadow:
+        0 10px 35px rgba(48, 67, 48, 0.08);
+
+    }
+
+
+    /* =========================================================
+       RESET
+    ========================================================= */
+
+    * {
+
+      margin: 0;
+
+      padding: 0;
+
+      box-sizing: border-box;
+
+      -webkit-tap-highlight-color: transparent;
+
+    }
+
+
+    html {
+
+      scroll-behavior: smooth;
+
+    }
+
+
+    body {
+
+      min-height: 100vh;
+
+      background:
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(169, 195, 159, 0.20),
+          transparent 32%
+        ),
+        radial-gradient(
+          circle at 100% 30%,
+          rgba(181, 154, 98, 0.07),
+          transparent 28%
+        ),
+        var(--cream);
+
+      color: var(--text);
+
+      font-family: "DM Sans", sans-serif;
+
+      overflow-x: hidden;
+
+    }
+
+
+    button,
+    input {
+
+      font-family: inherit;
+
+    }
+
+
+    a {
+
+      text-decoration: none;
+
+      color: inherit;
+
+    }
+
+
+    /* =========================================================
+       PAGE
+    ========================================================= */
+
+    .page {
+
+      width: 100%;
+
+      max-width: 520px;
+
+      margin: 0 auto;
+
+      min-height: 100vh;
+
+      padding: 0 18px 35px;
+
+      position: relative;
+
+    }
+
+
+    /* =========================================================
+       TOP DECORATION
+    ========================================================= */
+
+    .top-glow {
+
+      position: fixed;
+
+      width: 260px;
+
+      height: 260px;
+
+      border-radius: 50%;
+
+      background:
+        radial-gradient(
+          circle,
+          rgba(169, 195, 159, 0.22),
+          transparent 70%
+        );
+
+      top: -140px;
+
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      pointer-events: none;
+
+      z-index: -1;
+
+    }
+
+
+    /* =========================================================
+       BRAND HEADER
+    ========================================================= */
+
+    .brand {
+
+      text-align: center;
+
+      padding-top: 28px;
+
+      padding-bottom: 20px;
+
+      animation: fadeDown 0.8s ease both;
+
+    }
+
+
+    .brand-logo {
+
+      width: 105px;
+
+      height: auto;
+
+      display: block;
+
+      margin: 0 auto 11px;
+
+      object-fit: contain;
+
+    }
+
+
+    .brand-fallback {
+
+      display: none;
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: 34px;
+
+      letter-spacing: 8px;
+
+      font-weight: 600;
+
+      color: var(--sage-dark);
+
+    }
+
+
+    .brand-line {
+
+      width: 52px;
+
+      height: 1px;
+
+      background: var(--gold);
+
+      margin: 0 auto 9px;
+
+      opacity: 0.75;
+
+    }
+
+
+    .brand-powered {
+
+      font-size: 8px;
+
+      letter-spacing: 3px;
+
+      text-transform: uppercase;
+
+      color: var(--muted);
+
+    }
+
+
+    /* =========================================================
+       RESTAURANT HEADER
+    ========================================================= */
+
+    .restaurant-header {
+
+      text-align: center;
+
+      padding: 5px 8px 23px;
+
+      animation: fadeUp 0.9s ease 0.1s both;
+
+    }
+
+
+    .eyebrow {
+
+      font-size: 9px;
+
+      letter-spacing: 3px;
+
+      text-transform: uppercase;
+
+      color: var(--sage-dark);
+
+      font-weight: 600;
+
+      margin-bottom: 8px;
+
+    }
+
+
+    .restaurant-name {
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: clamp(32px, 9vw, 44px);
+
+      line-height: 0.95;
+
+      font-weight: 600;
+
+      color: var(--olive);
+
+      letter-spacing: -0.5px;
+
+    }
+
+
+    .restaurant-description {
+
+      margin-top: 11px;
+
+      color: var(--muted);
+
+      font-size: 13px;
+
+      line-height: 1.6;
+
+      max-width: 340px;
+
+      margin-left: auto;
+
+      margin-right: auto;
+
+    }
+
+
+    /* =========================================================
+       GOLD DIVIDER
+    ========================================================= */
+
+    .luxury-divider {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 10px;
+
+      margin: 2px auto 25px;
+
+      max-width: 210px;
+
+    }
+
+
+    .luxury-divider span {
+
+      height: 1px;
+
+      flex: 1;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          var(--gold-light)
+        );
+
+    }
+
+
+    .luxury-divider span:last-child {
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--gold-light),
+          transparent
+        );
+
+    }
+
+
+    .luxury-divider i {
+
+      width: 5px;
+
+      height: 5px;
+
+      border: 1px solid var(--gold);
+
+      transform: rotate(45deg);
+
+      display: block;
+
+    }
+
+
+    /* =========================================================
+       ADVERTISEMENT
+    ========================================================= */
+
+    .ad-section {
+
+      margin-bottom: 25px;
+
+      animation: fadeUp 0.8s ease 0.2s both;
+
+    }
+
+
+    .section-label {
+
+      text-align: center;
+
+      font-size: 8px;
+
+      text-transform: uppercase;
+
+      letter-spacing: 3px;
+
+      color: var(--muted);
+
+      margin-bottom: 9px;
+
+    }
+
+
+    /*
+      Your existing ad carousel partial
+      remains untouched.
+    */
+
+    .ad-wrapper {
+
+      border-radius: 16px;
+
+      overflow: hidden;
+
+    }
+
+
+    /* =========================================================
+       REWARD INTRO
+    ========================================================= */
+
+    .reward-intro {
+
+      text-align: center;
+
+      margin-top: 3px;
+
+      margin-bottom: 17px;
+
+      animation: fadeUp 0.8s ease 0.25s both;
+
+    }
+
+
+    .reward-label {
+
+      font-size: 9px;
+
+      letter-spacing: 3px;
+
+      text-transform: uppercase;
+
+      color: var(--sage-dark);
+
+      font-weight: 600;
+
+      margin-bottom: 6px;
+
+    }
+
+
+    .reward-heading {
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: 37px;
+
+      font-weight: 600;
+
+      line-height: 1;
+
+      color: var(--olive);
+
+    }
+
+
+    .reward-copy {
+
+      color: var(--muted);
+
+      font-size: 12px;
+
+      margin-top: 8px;
+
+    }
+
+
+    /* =========================================================
+       LOCATION PILL
+    ========================================================= */
+
+    .location-pill {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 8px;
+
+      width: fit-content;
+
+      max-width: 100%;
+
+      margin: 0 auto 17px;
+
+      padding: 8px 13px;
+
+      border: 1px solid var(--border);
+
+      border-radius: 999px;
+
+      background: rgba(255,255,255,0.70);
+
+      color: var(--muted);
+
+      font-size: 10px;
+
+      box-shadow: 0 5px 20px rgba(48,67,48,0.04);
+
+      animation: fadeUp 0.8s ease 0.3s both;
+
+    }
+
+
+    .location-dot {
+
+      width: 6px;
+
+      height: 6px;
+
+      border-radius: 50%;
+
+      background: var(--sage-medium);
+
+      box-shadow:
+        0 0 0 4px rgba(127,159,118,0.12);
+
+      animation: pulseDot 2s ease infinite;
+
+    }
+
+
+    /* =========================================================
+       SCRATCH AREA
+    ========================================================= */
+
+    .scratch-section {
+
+      animation: fadeUp 0.9s ease 0.35s both;
+
+    }
+
+
+    .scratch-card {
+
+      position: relative;
+
+      width: 100%;
+
+      max-width: 380px;
+
+      height: 215px;
+
+      margin: 0 auto;
+
+      border-radius: 24px;
+
+      overflow: hidden;
+
+      background:
+        linear-gradient(
+          145deg,
+          #fdfdf9,
+          #edf3e9
+        );
+
+      border: 1px solid rgba(84,112,82,0.20);
+
+      box-shadow:
+        0 25px 55px rgba(51,70,50,0.14),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+
+      user-select: none;
+
+      -webkit-user-select: none;
+
+      touch-action: none;
+
+    }
+
+
+    /*
+      Decorative outer glow
+    */
+
+    .scratch-card::before {
+
+      content: "";
+
+      position: absolute;
+
+      inset: 6px;
+
+      border: 1px solid rgba(181,154,98,0.25);
+
+      border-radius: 19px;
+
+      pointer-events: none;
+
+      z-index: 1;
+
+    }
+
+
+    /*
+      Decorative corner
+    */
+
+    .scratch-card::after {
+
+      content: "✦";
+
+      position: absolute;
+
+      right: 19px;
+
+      top: 14px;
+
+      color: rgba(181,154,98,0.65);
+
+      font-size: 12px;
+
+      z-index: 2;
+
+      pointer-events: none;
+
+    }
+
+
+    /* =========================================================
+       RESULT
+    ========================================================= */
+
+    .scratch-result {
+
+      position: absolute;
+
+      inset: 0;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      flex-direction: column;
+
+      padding: 30px;
+
+      text-align: center;
+
+      background:
+        radial-gradient(
+          circle at 50% 35%,
+          rgba(169,195,159,0.22),
+          transparent 55%
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          #edf3e9
+        );
+
+      z-index: 1;
+
+    }
+
+
+    .result-ring {
+
+      width: 54px;
+
+      height: 54px;
+
+      border-radius: 50%;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border: 1px solid rgba(181,154,98,0.55);
+
+      margin-bottom: 9px;
+
+      animation: slowFloat 3s ease-in-out infinite;
+
+    }
+
+
+    .result-icon {
+
+      font-size: 25px;
+
+      line-height: 1;
+
+    }
+
+
+    .result-title {
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: 31px;
+
+      font-weight: 600;
+
+      color: var(--olive);
+
+      line-height: 1;
+
+    }
+
+
+    .result-subtitle {
+
+      margin-top: 8px;
+
+      font-size: 11px;
+
+      color: var(--muted);
+
+      line-height: 1.5;
+
+    }
+
+
+    /* =========================================================
+       SCRATCH CANVAS
+    ========================================================= */
+
+    #scratchCanvas {
+
+      position: absolute;
+
+      inset: 0;
+
+      width: 100%;
+
+      height: 100%;
+
+      z-index: 5;
+
+      cursor: crosshair;
+
+      touch-action: none;
+
+      transition:
+        opacity 0.65s ease,
+        transform 0.65s ease;
+
+    }
+
+
+    #scratchCanvas.hidden {
+
+      opacity: 0;
+
+      transform: scale(1.02);
+
+      pointer-events: none;
+
+    }
+
+
+    /* =========================================================
+       LOCATION CHECK
+    ========================================================= */
+
+    .checking-location {
+
+      position: absolute;
+
+      inset: 0;
+
+      z-index: 10;
+
+      background:
+        rgba(249,250,246,0.97);
+
+      display: none;
+
+      justify-content: center;
+
+      align-items: center;
+
+      flex-direction: column;
+
+      text-align: center;
+
+      padding: 25px;
+
+    }
+
+
+    .checking-location.show {
+
+      display: flex;
+
+      animation: fadeIn 0.25s ease;
+
+    }
+
+
+    .location-loader {
+
+      width: 48px;
+
+      height: 48px;
+
+      border-radius: 50%;
+
+      border: 1px solid rgba(84,112,82,0.20);
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      margin-bottom: 13px;
+
+      position: relative;
+
+    }
+
+
+    .location-loader::before {
+
+      content: "";
+
+      width: 31px;
+
+      height: 31px;
+
+      border-radius: 50%;
+
+      border: 2px solid transparent;
+
+      border-top-color: var(--sage-dark);
+
+      border-right-color: var(--gold);
+
+      animation: spin 0.9s linear infinite;
+
+    }
+
+
+    .checking-title {
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: 22px;
+
+      color: var(--olive);
+
+    }
+
+
+    .checking-text {
+
+      margin-top: 4px;
+
+      font-size: 10px;
+
+      color: var(--muted);
+
+    }
+
+
+    /* =========================================================
+       STATUS
+    ========================================================= */
+
+    .status {
+
+      margin: 15px auto 0;
+
+      min-height: 40px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      text-align: center;
+
+      padding: 9px 14px;
+
+      border-radius: 12px;
+
+      font-size: 11px;
+
+      line-height: 1.5;
+
+      max-width: 390px;
+
+    }
+
+
+    .status.info {
+
+      color: var(--muted);
+
+      background: rgba(255,255,255,0.55);
+
+    }
+
+
+    .status.success {
+
+      color: #4d704b;
+
+      background: rgba(169,195,159,0.17);
+
+      border: 1px solid rgba(127,159,118,0.16);
+
+    }
+
+
+    .status.error {
+
+      color: #8b5f5f;
+
+      background: rgba(180,100,100,0.07);
+
+      border: 1px solid rgba(180,100,100,0.10);
+
+    }
+
+
+    /* =========================================================
+       REWARD BUTTON
+    ========================================================= */
+
+    .action-btn {
+
+      display: none;
+
+      margin: 17px auto 0;
+
+      width: 100%;
+
+      max-width: 300px;
+
+      padding: 14px 20px;
+
+      border-radius: 999px;
+
+      background: var(--olive);
+
+      color: white;
+
+      text-align: center;
+
+      font-size: 11px;
+
+      font-weight: 600;
+
+      letter-spacing: 0.5px;
+
+      box-shadow:
+        0 12px 25px rgba(51,70,50,0.18);
+
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+    }
+
+
+    .action-btn.show {
+
+      display: block;
+
+      animation:
+        buttonAppear 0.5s ease both;
+
+    }
+
+
+    .action-btn:active {
+
+      transform: scale(0.97);
+
+    }
+
+
+    /* =========================================================
+       ALREADY PLAYED
+    ========================================================= */
+
+    .already-played {
+
+      text-align: center;
+
+      padding: 30px 20px;
+
+      border-radius: 22px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,0.96),
+          rgba(235,242,231,0.80)
+        );
+
+      border: 1px solid var(--border);
+
+      box-shadow: var(--soft-shadow);
+
+      animation: fadeUp 0.6s ease both;
+
+    }
+
+
+    .already-icon {
+
+      width: 52px;
+
+      height: 52px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border-radius: 50%;
+
+      border: 1px solid rgba(181,154,98,0.4);
+
+      margin: 0 auto 12px;
+
+      font-size: 22px;
+
+    }
+
+
+    .already-played h3 {
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: 27px;
+
+      font-weight: 600;
+
+      color: var(--olive);
+
+    }
+
+
+    .already-played p {
+
+      margin-top: 7px;
+
+      font-size: 11px;
+
+      color: var(--muted);
+
+    }
+
+
+    .reward-link {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      margin-top: 18px;
+
+      padding: 12px 22px;
+
+      border-radius: 999px;
+
+      background: var(--olive);
+
+      color: white;
+
+      font-size: 11px;
+
+      font-weight: 600;
+
+    }
+
+
+    /* =========================================================
+       FOOTER
+    ========================================================= */
+
+    .footer {
+
+      text-align: center;
+
+      padding-top: 30px;
+
+      margin-top: 28px;
+
+      border-top: 1px solid rgba(84,112,82,0.10);
+
+      animation: fadeUp 1s ease 0.5s both;
+
+    }
+
+
+    .footer-small {
+
+      font-size: 8px;
+
+      letter-spacing: 2px;
+
+      text-transform: uppercase;
+
+      color: #9aa49a;
+
+    }
+
+
+    .footer-brand {
+
+      margin-top: 5px;
+
+      font-family: "Cormorant Garamond", serif;
+
+      font-size: 20px;
+
+      letter-spacing: 3px;
+
+      color: var(--sage-dark);
+
+    }
+
+
+    /* =========================================================
+       ANIMATIONS
+    ========================================================= */
+
+    @keyframes fadeUp {
+
+      from {
+
+        opacity: 0;
+
+        transform: translateY(18px);
+
+      }
+
+      to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+      }
+
+    }
+
+
+    @keyframes fadeDown {
+
+      from {
+
+        opacity: 0;
+
+        transform: translateY(-15px);
+
+      }
+
+      to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+      }
+
+    }
+
+
+    @keyframes fadeIn {
+
+      from {
+
+        opacity: 0;
+
+      }
+
+      to {
+
+        opacity: 1;
+
+      }
+
+    }
+
+
+    @keyframes spin {
+
+      to {
+
+        transform: rotate(360deg);
+
+      }
+
+    }
+
+
+    @keyframes pulseDot {
+
+      0%,
+      100% {
+
+        box-shadow:
+          0 0 0 3px rgba(127,159,118,0.12);
+
+      }
+
+      50% {
+
+        box-shadow:
+          0 0 0 7px rgba(127,159,118,0.04);
+
+      }
+
+    }
+
+
+    @keyframes slowFloat {
+
+      0%,
+      100% {
+
+        transform: translateY(0);
+
+      }
+
+      50% {
+
+        transform: translateY(-4px);
+
+      }
+
+    }
+
+
+    @keyframes buttonAppear {
+
+      from {
+
+        opacity: 0;
+
+        transform: translateY(10px) scale(0.96);
+
+      }
+
+      to {
+
+        opacity: 1;
+
+        transform: translateY(0) scale(1);
+
+      }
+
+    }
+
+
+    /* =========================================================
+       LARGER PHONES
+    ========================================================= */
+
+    @media (min-width: 400px) {
+
+      .page {
+
+        padding-left: 22px;
+
+        padding-right: 22px;
+
+      }
+
+
+      .scratch-card {
+
+        height: 225px;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       DESKTOP
+    ========================================================= */
+
+    @media (min-width: 700px) {
+
+      .page {
+
+        max-width: 620px;
+
+        padding-top: 15px;
+
+      }
+
+
+      .brand {
+
+        padding-top: 20px;
+
+      }
+
+
+      .restaurant-header {
+
+        padding-bottom: 28px;
+
+      }
+
+
+      .scratch-card {
+
+        max-width: 420px;
+
+        height: 245px;
+
+      }
+
+    }
+
   </style>
+
 </head>
+
+
 <body>
-  <div class="card-container">
-    <h2><%= settings.name %></h2>
 
-    <% if (hasScratchedToday) { %>
-      <div class="already-box">
-        <p style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">⏳ Limit Reached Today</p>
-        <p style="color: #7f1d1d; margin-bottom: 12px;">You have already used your 1 daily scratch attempt today.</p>
-        <% if (existingReward) { %>
-          <a href="/restaurant/reward/<%= existingReward.rewardId %>" class="btn-claim">VIEW TODAY'S REWARD TICKET 🎟️️</a>
-        <% } else { %>
-          <p style="font-size: 13px; color: #6b7280;">Come back tomorrow for another chance to scratch and win!</p>
-        <% } %>
+
+  <div class="top-glow"></div>
+
+
+  <main class="page">
+
+
+    <!-- =====================================================
+         BRAND
+    ====================================================== -->
+
+    <header class="brand">
+
+      <img
+        src="/public/images/ChatGPT Image Sep 22, 2026, 09_08_48 PM.png"
+        class="brand-logo"
+        alt="Adoraise"
+        onerror="this.style.display='none'; document.querySelector('.brand-fallback').style.display='block';"
+      >
+
+      <div class="brand-fallback">
+        ADORAISE
       </div>
-    <% } else { %>
-      <p id="subInstruction">Scratch the card below to reveal your luck!</p>
 
-      <div class="scratch-container">
-        <div class="reward-layer lose" id="rewardLayer">
-          <p style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase;" id="layerSub">Scratching...</p>
-          <h2 id="layerTitle">???</h2>
+      <div class="brand-line"></div>
+
+      <div class="brand-powered">
+        Creative · Digital · Growth
+      </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         RESTAURANT
+    ====================================================== -->
+
+    <section class="restaurant-header">
+
+      <div class="eyebrow">
+        Welcome to
+      </div>
+
+      <h1 class="restaurant-name">
+        <%= settings.name %>
+      </h1>
+
+      <% if (settings.description) { %>
+
+        <p class="restaurant-description">
+          <%= settings.description %>
+        </p>
+
+      <% } %>
+
+    </section>
+
+
+    <div class="luxury-divider">
+
+      <span></span>
+
+      <i></i>
+
+      <span></span>
+
+    </div>
+
+
+    <!-- =====================================================
+         ADVERTISEMENT
+    ====================================================== -->
+
+    <% if (typeof ads !== 'undefined' && ads.length > 0) { %>
+
+      <section class="ad-section">
+
+        <div class="section-label">
+          Featured
         </div>
 
-        <canvas id="scratchCanvas" width="280" height="160"></canvas>
+        <div class="ad-wrapper">
+
+          <%- include('../partials/adCarousel', { ads: ads }) %>
+
+        </div>
+
+      </section>
+
+    <% } %>
+
+
+    <!-- =====================================================
+         REWARD INTRO
+    ====================================================== -->
+
+    <section class="reward-intro">
+
+      <div class="reward-label">
+        A little something for you
       </div>
 
-      <div class="result-box" id="resultBox" style="display: none;"></div>
+      <h2 class="reward-heading">
+        Scratch & Win
+      </h2>
+
+      <p class="reward-copy">
+        Reveal today's surprise.
+      </p>
+
+    </section>
+
+
+    <!-- =====================================================
+         LOCATION
+    ====================================================== -->
+
+    <div class="location-pill">
+
+      <span class="location-dot"></span>
+
+      <span>
+        You must be inside the restaurant to play
+      </span>
+
+    </div>
+
+
+    <!-- =====================================================
+         REWARD DISABLED
+    ====================================================== -->
+
+    <% if (settings.rewardEnabled === false) { %>
+
+
+      <div class="status error">
+
+        Rewards are currently unavailable.
+        Please try again later.
+
+      </div>
+
+
+    <% } else if (hasScratchedToday) { %>
+
+
+      <!-- ===================================================
+           ALREADY PLAYED
+      ==================================================== -->
+
+      <section class="already-played">
+
+        <div class="already-icon">
+          ✦
+        </div>
+
+        <h3>
+          Your chance has been used
+        </h3>
+
+        <p>
+          You have already played today.
+          Come back tomorrow for another surprise.
+        </p>
+
+
+        <% if (existingReward) { %>
+
+          <a
+            href="/restaurant/reward/<%= existingReward.rewardId %>"
+            class="reward-link"
+          >
+            View My Reward
+          </a>
+
+        <% } %>
+
+      </section>
+
+
+    <% } else { %>
+
+
+      <!-- ===================================================
+           SCRATCH SECTION
+      ==================================================== -->
+
+      <section class="scratch-section">
+
+
+        <div
+          class="scratch-card"
+          id="scratchCard"
+        >
+
+
+          <!-- ===============================================
+               RESULT INSIDE CARD
+          ================================================ -->
+
+          <div class="scratch-result">
+
+
+            <div class="result-ring">
+
+              <div
+                class="result-icon"
+                id="resultIcon"
+              >
+                ✦
+              </div>
+
+            </div>
+
+
+            <div
+              class="result-title"
+              id="resultTitle"
+            >
+              Scratch to reveal
+            </div>
+
+
+            <div
+              class="result-subtitle"
+              id="resultSubtitle"
+            >
+              Your surprise awaits.
+            </div>
+
+
+          </div>
+
+
+          <!-- ===============================================
+               LOCATION LOADER
+          ================================================ -->
+
+          <div
+            class="checking-location"
+            id="checkingLocation"
+          >
+
+            <div class="location-loader"></div>
+
+            <div class="checking-title">
+              Verifying your location
+            </div>
+
+            <div class="checking-text">
+              Please wait a moment...
+            </div>
+
+          </div>
+
+
+          <!-- ===============================================
+               SCRATCH CANVAS
+          ================================================ -->
+
+          <canvas
+            id="scratchCanvas"
+          ></canvas>
+
+
+        </div>
+
+
+        <!-- ===============================================
+             STATUS
+        ================================================ -->
+
+        <div
+          id="status"
+          class="status info"
+        >
+          Touch the card to begin.
+        </div>
+
+
+        <!-- ===============================================
+             REWARD BUTTON
+        ================================================ -->
+
+        <a
+          id="rewardButton"
+          class="action-btn"
+          href="#"
+        >
+          View My Reward
+        </a>
+
+
+      </section>
+
+
     <% } %>
-  </div>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer class="footer">
+
+      <div class="footer-small">
+        Powered by
+      </div>
+
+      <div class="footer-brand">
+        ADORAISE
+      </div>
+
+    </footer>
+
+
+  </main>
+
+
+  <!-- =======================================================
+       JAVASCRIPT
+  ======================================================== -->
 
   <script>
-    // Maintain persistent device ID in localStorage
-    let persistentDeviceId = localStorage.getItem('adoraise_device_id');
-    if (!persistentDeviceId) {
-      persistentDeviceId = 'DEV-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
-      localStorage.setItem('adoraise_device_id', persistentDeviceId);
-    }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has('deviceId')) {
-      urlParams.set('deviceId', persistentDeviceId);
-      window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
-    }
 
-    <% if (!hasScratchedToday) { %>
-    const canvas = document.getElementById('scratchCanvas');
-    const ctx = canvas.getContext('2d');
-    const rewardLayer = document.getElementById('rewardLayer');
-    const layerSub = document.getElementById('layerSub');
-    const layerTitle = document.getElementById('layerTitle');
-    const resultBox = document.getElementById('resultBox');
-    const subInstruction = document.getElementById('subInstruction');
+    /* =========================================================
+       ELEMENTS
+    ========================================================= */
 
-    // Draw scratch layer cover
-    ctx.fillStyle = '#9ca3af';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.font = 'bold 18px sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText('SCRATCH HERE 🪙', canvas.width / 2, canvas.height / 2 + 6);
+    const canvas =
+      document.getElementById(
+        'scratchCanvas'
+      );
 
-    let isScratching = false;
-    let outcomeFetched = false;
-    let gameResult = null;
 
-    async function fetchOutcome() {
-      if (outcomeFetched) return;
-      outcomeFetched = true;
-      try {
-        const response = await fetch(`/restaurant/claim?deviceId=${encodeURIComponent(persistentDeviceId)}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Device-ID': persistentDeviceId
-          }
-        });
-        
-        gameResult = await response.json();
+    const card =
+      document.getElementById(
+        'scratchCard'
+      );
 
-        if (gameResult.alreadyPlayed) {
-          rewardLayer.className = 'reward-layer lose';
-          layerSub.innerText = 'ATTEMPT USED';
-          layerTitle.innerText = 'Already Scratched Today!';
-        } else if (gameResult.isWinner) {
-          rewardLayer.className = 'reward-layer win';
-          layerSub.innerText = 'YOU WON! 🎉';
-          layerTitle.innerText = '<%= settings.rewardValue || "₹50 OFF" %>';
-        } else {
-          rewardLayer.className = 'reward-layer lose';
-          layerSub.innerText = 'BAD LUCK!';
-          layerTitle.innerText = 'Better Luck Next Time 😢';
+
+    const statusBox =
+      document.getElementById(
+        'status'
+      );
+
+
+    const checkingLocation =
+      document.getElementById(
+        'checkingLocation'
+      );
+
+
+    const resultTitle =
+      document.getElementById(
+        'resultTitle'
+      );
+
+
+    const resultSubtitle =
+      document.getElementById(
+        'resultSubtitle'
+      );
+
+
+    const resultIcon =
+      document.getElementById(
+        'resultIcon'
+      );
+
+
+    const rewardButton =
+      document.getElementById(
+        'rewardButton'
+      );
+
+
+    /* =========================================================
+       SCRATCH GAME
+    ========================================================= */
+
+    if (canvas && card) {
+
+
+      const ctx =
+        canvas.getContext(
+          '2d'
+        );
+
+
+      let isDrawing = false;
+
+      let scratchStarted = false;
+
+      let locationVerified = false;
+
+      let gameFinished = false;
+
+      let isWinner = false;
+
+      let redirectUrl = null;
+
+
+      /* =======================================================
+         CANVAS SIZE
+      ======================================================== */
+
+      function resizeCanvas() {
+
+        const rect =
+          card.getBoundingClientRect();
+
+
+        const dpr =
+          window.devicePixelRatio || 1;
+
+
+        canvas.width =
+          rect.width * dpr;
+
+
+        canvas.height =
+          rect.height * dpr;
+
+
+        canvas.style.width =
+          rect.width + 'px';
+
+
+        canvas.style.height =
+          rect.height + 'px';
+
+
+        ctx.setTransform(
+          dpr,
+          0,
+          0,
+          dpr,
+          0,
+          0
+        );
+
+
+        /*
+          Luxury scratch surface
+        */
+
+        const gradient =
+          ctx.createLinearGradient(
+            0,
+            0,
+            rect.width,
+            rect.height
+          );
+
+
+        gradient.addColorStop(
+          0,
+          '#809b77'
+        );
+
+
+        gradient.addColorStop(
+          0.5,
+          '#a8bd9f'
+        );
+
+
+        gradient.addColorStop(
+          1,
+          '#708b68'
+        );
+
+
+        ctx.fillStyle =
+          gradient;
+
+
+        ctx.fillRect(
+          0,
+          0,
+          rect.width,
+          rect.height
+        );
+
+
+        /*
+          Subtle texture
+        */
+
+        ctx.globalAlpha = 0.10;
+
+
+        for (
+          let i = 0;
+          i < 80;
+          i++
+        ) {
+
+          ctx.beginPath();
+
+
+          ctx.arc(
+            Math.random() * rect.width,
+            Math.random() * rect.height,
+            Math.random() * 1.5,
+            0,
+            Math.PI * 2
+          );
+
+
+          ctx.fillStyle =
+            '#ffffff';
+
+
+          ctx.fill();
+
         }
-      } catch (err) {
-        console.error('Error fetching outcome:', err);
+
+
+        ctx.globalAlpha = 1;
+
+
+        /*
+          Border
+        */
+
+        ctx.strokeStyle =
+          'rgba(255,255,255,0.30)';
+
+
+        ctx.lineWidth = 1;
+
+
+        ctx.strokeRect(
+          10,
+          10,
+          rect.width - 20,
+          rect.height - 20
+        );
+
+
+        /*
+          Scratch text
+        */
+
+        ctx.fillStyle =
+          'rgba(255,255,255,0.92)';
+
+
+        ctx.font =
+          '600 12px DM Sans';
+
+
+        ctx.textAlign =
+          'center';
+
+
+        ctx.textBaseline =
+          'middle';
+
+
+        ctx.fillText(
+          '✦  SCRATCH TO REVEAL  ✦',
+          rect.width / 2,
+          rect.height / 2 - 8
+        );
+
+
+        ctx.font =
+          '400 9px DM Sans';
+
+
+        ctx.fillStyle =
+          'rgba(255,255,255,0.72)';
+
+
+        ctx.fillText(
+          'Your surprise awaits',
+          rect.width / 2,
+          rect.height / 2 + 14
+        );
+
       }
-    }
 
-    function getBrushPos(xRef, yRef) {
-      const rect = canvas.getBoundingClientRect();
-      return { x: xRef - rect.left, y: yRef - rect.top };
-    }
 
-    function scratch(x, y) {
-      fetchOutcome();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(x, y, 18, 0, Math.PI * 2);
-      ctx.fill();
-      checkScratchedPercentage();
-    }
+      resizeCanvas();
 
-    // Touch & Mouse Event Listeners
-    canvas.addEventListener('mousedown', (e) => { isScratching = true; const pos = getBrushPos(e.clientX, e.clientY); scratch(pos.x, pos.y); });
-    canvas.addEventListener('mousemove', (e) => { if (isScratching) { const pos = getBrushPos(e.clientX, e.clientY); scratch(pos.x, pos.y); } });
-    canvas.addEventListener('mouseup', () => isScratching = false);
 
-    canvas.addEventListener('touchstart', (e) => { isScratching = true; const pos = getBrushPos(e.touches[0].clientX, e.touches[0].clientY); scratch(pos.x, pos.y); });
-    canvas.addEventListener('touchmove', (e) => { if (isScratching) { const pos = getBrushPos(e.touches[0].clientX, e.touches[0].clientY); scratch(pos.x, pos.y); } });
-    canvas.addEventListener('touchend', () => isScratching = false);
+      window.addEventListener(
+        'resize',
+        resizeCanvas
+      );
 
-    function checkScratchedPercentage() {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let clearedPixels = 0;
-      for (let i = 3; i < imageData.data.length; i += 4) {
-        if (imageData.data[i] === 0) clearedPixels++;
-      }
-      
-      const percent = (clearedPixels / (imageData.data.length / 4)) * 100;
-      if (percent > 40 && gameResult !== null) {
-        canvas.style.pointerEvents = 'none';
-        canvas.style.opacity = '0';
-        canvas.style.transition = 'opacity 0.5s ease';
 
-        resultBox.style.display = 'block';
-        if (gameResult.alreadyPlayed) {
-          subInstruction.innerText = gameResult.message;
-          if (gameResult.redirectUrl) {
-            resultBox.innerHTML = `<a href="${gameResult.redirectUrl}" class="btn-claim">VIEW YOUR TICKET 🎟️</a>`;
-          } else {
-            resultBox.innerHTML = `<p style="color: #dc2626; font-weight: bold;">Come back tomorrow! 🍀</p>`;
-          }
-        } else if (gameResult.isWinner) {
-          subInstruction.innerText = 'Congratulations! Claim your ticket below.';
-          resultBox.innerHTML = `<a href="${gameResult.redirectUrl}" class="btn-claim">VIEW YOUR REWARD TICKET 🎟️</a>`;
+      /* =======================================================
+         POSITION
+      ======================================================== */
+
+      function getPosition(event) {
+
+        const rect =
+          canvas.getBoundingClientRect();
+
+
+        let clientX;
+
+        let clientY;
+
+
+        if (
+          event.touches &&
+          event.touches.length > 0
+        ) {
+
+          clientX =
+            event.touches[0].clientX;
+
+
+          clientY =
+            event.touches[0].clientY;
+
         } else {
-          subInstruction.innerText = 'Thanks for playing today!';
-          resultBox.innerHTML = `<p style="color: #dc2626; font-weight: bold;">Better Luck Next Time! Come back tomorrow. 🍀</p>`;
+
+          clientX =
+            event.clientX;
+
+
+          clientY =
+            event.clientY;
+
         }
+
+
+        return {
+
+          x:
+            clientX -
+            rect.left,
+
+          y:
+            clientY -
+            rect.top
+
+        };
+
       }
+
+
+      /* =======================================================
+         START SCRATCH
+      ======================================================== */
+
+      async function startScratch(event) {
+
+        if (gameFinished) {
+          return;
+        }
+
+
+        /*
+          First touch:
+          verify GPS.
+        */
+
+        if (!scratchStarted) {
+
+          event.preventDefault();
+
+          await verifyLocation();
+
+          return;
+
+        }
+
+
+        isDrawing = true;
+
+        scratch(event);
+
+      }
+
+
+      /* =======================================================
+         GPS
+      ======================================================== */
+
+      async function verifyLocation() {
+
+        if (locationVerified) {
+
+          scratchStarted = true;
+
+          return;
+
+        }
+
+
+        checkingLocation.classList.add(
+          'show'
+        );
+
+
+        statusBox.className =
+          'status info';
+
+
+        statusBox.textContent =
+          'Verifying your location...';
+
+
+        if (!navigator.geolocation) {
+
+          checkingLocation.classList.remove(
+            'show'
+          );
+
+
+          statusBox.className =
+            'status error';
+
+
+          statusBox.textContent =
+            'Location services are not supported on this device.';
+
+
+          return;
+
+        }
+
+
+        navigator.geolocation.getCurrentPosition(
+
+          async function(position) {
+
+
+            const latitude =
+              position.coords.latitude;
+
+
+            const longitude =
+              position.coords.longitude;
+
+
+            try {
+
+
+              const response =
+                await fetch(
+                  '/restaurant/claim?deviceId=<%= deviceId %>',
+                  {
+
+                    method: 'POST',
+
+                    headers: {
+
+                      'Content-Type':
+                        'application/json'
+
+                    },
+
+                    body:
+                      JSON.stringify({
+
+                        deviceId:
+                          '<%= deviceId %>',
+
+                        latitude:
+                          latitude,
+
+                        longitude:
+                          longitude
+
+                      })
+
+                  }
+                );
+
+
+              const data =
+                await response.json();
+
+
+              checkingLocation.classList.remove(
+                'show'
+              );
+
+
+              /* ==========================================
+                 LOCATION FAILED
+              =========================================== */
+
+              if (
+                !response.ok ||
+                data.locationError
+              ) {
+
+                statusBox.className =
+                  'status error';
+
+
+                statusBox.textContent =
+                  data.message ||
+                  'You must be inside the restaurant to play.';
+
+
+                return;
+
+              }
+
+
+              /* ==========================================
+                 ALREADY PLAYED
+              =========================================== */
+
+              if (
+                data.alreadyPlayed
+              ) {
+
+                gameFinished = true;
+
+
+                statusBox.className =
+                  'status error';
+
+
+                statusBox.textContent =
+                  data.message ||
+                  'You have already played today.';
+
+
+                return;
+
+              }
+
+
+              /* ==========================================
+                 VERIFIED
+              =========================================== */
+
+              locationVerified =
+                true;
+
+
+              scratchStarted =
+                true;
+
+
+              isWinner =
+                data.isWinner === true;
+
+
+              redirectUrl =
+                data.redirectUrl ||
+                null;
+
+
+              statusBox.className =
+                'status info';
+
+
+              statusBox.textContent =
+                'Location verified. Now reveal your surprise.';
+
+
+              /* ==========================================
+                 SET RESULT
+              =========================================== */
+
+              if (isWinner) {
+
+                resultIcon.textContent =
+                  '✦';
+
+
+                resultTitle.textContent =
+                  '<%= settings.rewardValue || "₹100 Cashback" %>';
+
+
+                resultSubtitle.textContent =
+                  'Congratulations. You are today\'s winner.';
+
+
+              } else {
+
+                resultIcon.textContent =
+                  '♡';
+
+
+                resultTitle.textContent =
+                  'Better Luck Next Time';
+
+
+                resultSubtitle.textContent =
+                  'Thank you for playing. Come back tomorrow.';
+
+              }
+
+
+            } catch (error) {
+
+
+              console.error(error);
+
+
+              checkingLocation.classList.remove(
+                'show'
+              );
+
+
+              statusBox.className =
+                'status error';
+
+
+              statusBox.textContent =
+                'Something went wrong. Please try again.';
+
+            }
+
+          },
+
+
+          function(error) {
+
+
+            checkingLocation.classList.remove(
+              'show'
+            );
+
+
+            statusBox.className =
+              'status error';
+
+
+            if (
+              error.code === 1
+            ) {
+
+              statusBox.textContent =
+                'Please allow location access to play.';
+
+            } else if (
+              error.code === 2
+            ) {
+
+              statusBox.textContent =
+                'Your location could not be detected. Try again.';
+
+            } else if (
+              error.code === 3
+            ) {
+
+              statusBox.textContent =
+                'Location request timed out. Try again.';
+
+            } else {
+
+              statusBox.textContent =
+                'Unable to verify your location.';
+
+            }
+
+          },
+
+
+          {
+
+            enableHighAccuracy:
+              true,
+
+            timeout:
+              10000,
+
+            maximumAge:
+              0
+
+          }
+
+        );
+
+      }
+
+
+      /* =======================================================
+         SCRATCH
+      ======================================================== */
+
+      function scratch(event) {
+
+        if (
+          !scratchStarted ||
+          gameFinished
+        ) {
+
+          return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        const pos =
+          getPosition(event);
+
+
+        ctx.globalCompositeOperation =
+          'destination-out';
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+
+          pos.x,
+
+          pos.y,
+
+          25,
+
+          0,
+
+          Math.PI * 2
+
+        );
+
+
+        ctx.fill();
+
+
+        ctx.globalCompositeOperation =
+          'source-over';
+
+
+        checkScratchPercentage();
+
+      }
+
+
+      /* =======================================================
+         CHECK SCRATCH PERCENTAGE
+      ======================================================== */
+
+      function checkScratchPercentage() {
+
+
+        const imageData =
+          ctx.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
+
+        const pixels =
+          imageData.data;
+
+
+        let transparentPixels =
+          0;
+
+
+        let totalPixels =
+          0;
+
+
+        /*
+          Sample every few pixels
+          for mobile performance.
+        */
+
+        for (
+          let i = 3;
+          i < pixels.length;
+          i += 16
+        ) {
+
+          totalPixels++;
+
+
+          if (
+            pixels[i] === 0
+          ) {
+
+            transparentPixels++;
+
+          }
+
+        }
+
+
+        const percentage =
+          (
+            transparentPixels /
+            totalPixels
+          ) * 100;
+
+
+        /*
+          Reveal at 45%.
+        */
+
+        if (
+          percentage >= 45
+        ) {
+
+          finishScratch();
+
+        }
+
+      }
+
+
+      /* =======================================================
+         FINISH
+      ======================================================== */
+
+      function finishScratch() {
+
+
+        if (gameFinished) {
+
+          return;
+
+        }
+
+
+        gameFinished =
+          true;
+
+
+        canvas.classList.add(
+          'hidden'
+        );
+
+
+        if (isWinner) {
+
+
+          resultIcon.textContent =
+            '✦';
+
+
+          resultTitle.textContent =
+            '<%= settings.rewardValue || "₹100 Cashback" %>';
+
+
+          resultSubtitle.textContent =
+            'Congratulations. You are today\'s winner.';
+
+
+          statusBox.className =
+            'status success';
+
+
+          statusBox.textContent =
+            'Your reward is ready.';
+
+
+          if (redirectUrl) {
+
+            rewardButton.href =
+              redirectUrl;
+
+
+            rewardButton.classList.add(
+              'show'
+            );
+
+          }
+
+
+        } else {
+
+
+          resultIcon.textContent =
+            '♡';
+
+
+          resultTitle.textContent =
+            'Better Luck Next Time';
+
+
+          resultSubtitle.textContent =
+            'Come back tomorrow for another chance.';
+
+
+          statusBox.className =
+            'status info';
+
+
+          statusBox.textContent =
+            'Thank you for playing. Come back tomorrow.';
+
+        }
+
+      }
+
+
+      /* =======================================================
+         MOUSE
+      ======================================================== */
+
+      canvas.addEventListener(
+        'mousedown',
+        startScratch
+      );
+
+
+      canvas.addEventListener(
+        'mousemove',
+        function(event) {
+
+          if (isDrawing) {
+
+            scratch(event);
+
+          }
+
+        }
+      );
+
+
+      window.addEventListener(
+        'mouseup',
+        function() {
+
+          isDrawing =
+            false;
+
+        }
+      );
+
+
+      /* =======================================================
+         TOUCH
+      ======================================================== */
+
+      canvas.addEventListener(
+        'touchstart',
+        startScratch,
+        {
+          passive: false
+        }
+      );
+
+
+      canvas.addEventListener(
+        'touchmove',
+        function(event) {
+
+          if (isDrawing) {
+
+            scratch(event);
+
+          }
+
+        },
+        {
+          passive: false
+        }
+      );
+
+
+      canvas.addEventListener(
+        'touchend',
+        function() {
+
+          isDrawing =
+            false;
+
+        }
+      );
+
     }
-    <% } %>
+
   </script>
+
+
 </body>
+
 </html>

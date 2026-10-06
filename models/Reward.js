@@ -8,36 +8,66 @@ const rewardSchema = new mongoose.Schema(
       unique: true,
       index: true
     },
+
     deviceId: {
       type: String,
       required: true,
       index: true
     },
-    rewardType: {
-      type: String,
-      required: true
-    },
+
     value: {
       type: String,
-      required: true
+      default: '₹100 Cashback'
     },
+
+    rewardType: {
+      type: String,
+      default: 'CASHBACK'
+    },
+
     status: {
       type: String,
-      enum: ['ACTIVE', 'REDEEMED', 'EXPIRED', 'CANCELLED'],
-      default: 'ACTIVE',
+      enum: [
+        'ACTIVE',
+        'PENDING_PAYOUT',
+        'PAID',
+        'EXPIRED',
+        'REDEEMED'
+      ],
+      default: 'ACTIVE'
+    },
+
+    customerName: {
+      type: String,
+      default: ''
+    },
+
+    upiId: {
+      type: String,
+      default: ''
+    },
+
+    payoutSubmittedAt: {
+      type: Date
+    },
+
+    paidAt: {
+      type: Date
+    },
+
+    redeemedAt: {
+      type: Date
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
       index: true
     },
+
     expiresAt: {
-      type: Date,
-      required: true
-    },
-    redeemedAt: {
-      type: Date,
-      default: null
+      type: Date
     }
-  },
-  {
-    timestamps: true
   }
 );
 
